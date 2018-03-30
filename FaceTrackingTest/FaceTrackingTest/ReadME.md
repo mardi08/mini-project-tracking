@@ -1,4 +1,4 @@
-# Using OpenCV with gcc and CMake
+# Using OpenCV with gcc and CMake (Linux)
 1. Create a CMake file(CMakeLists.txt).
 
 Example:
