@@ -19,5 +19,11 @@ cd <code_directory>
 cmake .
 make
 ```
+Alternatively, using gcc command,
+```
+cd <code_directory>
+cmake .
+gcc <file_name>.cpp -lstdc++ `pkg-config --libs --cflags opencv` -o <output_name>
+```
 
 Link: https://docs.opencv.org/3.3.0/db/df5/tutorial_linux_gcc_cmake.html
