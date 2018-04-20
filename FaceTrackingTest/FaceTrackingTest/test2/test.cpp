@@ -10,13 +10,18 @@
 #include <string>
 #include <sstream>
 
+#include <SerialStream.h>
+#include <unistd.h>
+//#include <cstdlib>
+#include <string.h>
+
 
 #if defined (_WIN32) || defined( _WIN64)
 #define         DEVICE_PORT             "COM1"                               // COM1 for windows
 #endif
 
 #ifdef __linux__
-#define         DEVICE_PORT             "/dev/ttyS0"                         // ttyS0 for linux
+#define         DEVICE_PORT             "/dev/ttyUSB0"                         // ttyS0 for linux
 #endif
 
 using namespace std;
@@ -54,10 +59,8 @@ int main() {
     priorCenter = detectFace(frame, priorCenter);
     cout << priorCenter.x << ", " << priorCenter.y << endl;
 
-    ss << priorCenter.x;
-    ss >> x;
-    ss << priorCenter.y;
-    ss >> y;
+    x = std::to_string(priorCenter.x);
+    y = std::to_string(priorCenter.y);
 
     serialWrite(x, y);
 
@@ -227,29 +230,27 @@ Point detectFace(Mat frame, Point priorCenter) {
 }
 
 void serialWrite(string point_x, string point_y) {
-  serialib LS;
-  int Ret;
+    char next_char[100] = "";
+    int i;
 
-  // open serial port
-  Ret = LS.Open(DEVICE_PORT, 115200);
+    using namespace std;
+    using namespace LibSerial ;
+    SerialStream my_serial_stream;
+    my_serial_stream.Open("/dev/ttyUSB0") ;
+    my_serial_stream.SetBaudRate( SerialStreamBuf::BAUD_115200 ) ;
+    my_serial_stream.SetCharSize( SerialStreamBuf::CHAR_SIZE_8 ) ;
+    my_serial_stream.SetFlowControl( SerialStreamBuf::FLOW_CONTROL_NONE ) ;
+    my_serial_stream.SetParity( SerialStreamBuf::PARITY_NONE ) ;
+    my_serial_stream.SetNumOfStopBits(1) ;
+    my_serial_stream.SetVTime(1);
+    my_serial_stream.SetVMin(100);
 
-  if (Ret != 1) {
-    printf("Error opening port!");
-  } else {
-    printf("Port opened successfully!");
+    cout<<"Sending Command:\n";
+    cout << point_x << std::endl;
+    my_serial_stream << point_x << "," << point_y << std::endl ;
 
-    Ret = LS.WriteString("test\n");
-    if (Ret!=1) {                                                           // If the writting operation failed ...
-        printf ("Error while writing data\n");                              // ... display a message ...                                                        // ... quit the application.
-    } else {
-      printf ("Write operation is successful \n");
-    }
+    my_serial_stream.read(next_char,100);
+    cout<<"Result: "<<next_char<<"\n";
 
-    Ret = LS.WriteString("test\n");
-    if (Ret!=1) {                                                           // If the writting operation failed ...
-        printf ("Error while writing data\n");                              // ... display a message ...                                                        // ... quit the application.
-    } else {
-      printf ("Write operation is successful \n");
-    }
-  }
+    my_serial_stream.Close();
 }
