@@ -62,7 +62,7 @@ int main() {
     x = std::to_string(priorCenter.x);
     y = std::to_string(priorCenter.y);
 
-    serialWrite(x, y);
+    //serialWrite(x, y);
 
     if(waitKey(30) >= 0) // spacebar
       break;
@@ -171,12 +171,12 @@ Point detectFace(Mat frame, Point priorCenter) {
     }
 
     // Check to see if it's probably the same user
-    if(abs(center.x - priorCenter.x) < frame.size().width / 4 &&
-       abs(center.y - priorCenter.y) < frame.size().height / 4) {
+    if(abs(center.x - priorCenter.x) < frame.size().width / 6 &&
+       abs(center.y - priorCenter.y) < frame.size().height / 6) {
 
       // Check to see if the user moved enough to update position
-      if(abs(center.x - priorCenter.x) < 10 &&
-	 abs(center.y - priorCenter.y) < 10){
+      if(abs(center.x - priorCenter.x) < 7 &&
+	 abs(center.y - priorCenter.y) < 7){
 	center = priorCenter;
       }
 
@@ -245,12 +245,12 @@ void serialWrite(string point_x, string point_y) {
     my_serial_stream.SetVTime(1);
     my_serial_stream.SetVMin(100);
 
-    //cout<<"Sending Command:\n";
-    //cout << point_x << std::endl;
+    cout<<"Sending Command:\n";
+    cout << point_x << std::endl;
     my_serial_stream << point_x << "," << point_y << std::endl ;
 
-    //my_serial_stream.read(next_char,100);
-    //cout<<"Result: "<<next_char<<"\n";
+    my_serial_stream.read(next_char,100);
+    cout<<"Result: "<<next_char<<"\n";
 
     my_serial_stream.Close();
 }
