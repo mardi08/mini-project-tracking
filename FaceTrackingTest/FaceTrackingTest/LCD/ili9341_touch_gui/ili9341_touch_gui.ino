@@ -2,12 +2,9 @@
 #include "Adafruit_GFX.h"
 #include "Adafruit_ILI9341.h"
 #include "SPI.h"
-
-// This is calibration data for the raw touch data to the screen coordinates
-#define TS_MINX 150
-#define TS_MINY 130
-#define TS_MAXX 3800
-#define TS_MAXY 4000
+#include "Fonts/raleway9pt7b.h"
+#include "Fonts/raleway12pt7b.h"
+#include "Wire.h"
 
 // Define Display Pins
 #define TFT_DC 9
@@ -17,11 +14,6 @@
 #define TFT_CLK 13
 #define TFT_RST 8
 
-//Define STM32 SPI Pins
-#define STM_MOSI 11
-#define STM_CLK 13
-#define STM_SS 2
-
 // Define Touch Pins
 #define TS_SCK 3
 #define TS_CS 4
@@ -29,175 +21,114 @@
 #define TS_MISO 6
 #define TS_IRQ 7
 
-// Define button area
-#define autoButton_x 4
-#define autoButton_y 55
-#define manuButton_x 122
-#define manuButton_y 55
-#define buttonWidth 114
-#define buttonHeight 25
-
-
+// For display and touch
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 URTouch ts(TS_SCK, TS_CS, TS_MOSI, TS_MISO, TS_IRQ);
 
 int automan_flag = 0; // 0 - do nothing, 1 - auto, 2 - manual
 int operation = 0; // 0 - do nothing, 1 - auto, 2 - left, 3 - right, 4 - up, 5 - down
+int x, y;
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(9600);
-  pinMode(TFT_CS, OUTPUT);
-  pinMode(STM_SS, OUTPUT);
-  SPI.begin();
+  Wire.begin(0x08);
   tft.begin();
   ts.InitTouch();
   ts.setPrecision(PREC_EXTREME);
 
-  tft.fillScreen(ILI9341_WHITE);
+  initialDisplay();
+  Wire.onRequest(requestEvent);
 }
 
 void loop() {
-  int x, y;
-  // put your main code here, to run repeatedly:
-  rectDisplay();
-  textDisplay();
-  triangleDisplay();
+  if (ts.dataAvailable()) {
+    ts.read();
+    y = tft.height() - ts.getX();
+    x = ts.getY();
 
-  while (1) {
-    if (ts.dataAvailable()) {
-      ts.read();
-      y = tft.height() - ts.getX();
-      x = ts.getY();
-      Serial.println(x);
-      Serial.println(y);
+    if ((x > 4) && (x < 118) && (y > 55) && (y < 80)) {
+      automan_flag = 1; // auto
 
-      if ((x > 4) && (x < 118)) {
-        if ((y > 55) && (y < 80)) {
-          automan_flag = 1; // auto
-        }
-      } else if ((x > 122) && (x < 236)) {
-        if ((y > 55) && (y < 80)) {
-          automan_flag = 2; // manual
+      tft.drawRect(4, 55, 114, 25, tft.color565(232, 23, 93));
+      tft.drawRect(122, 55, 114, 25, tft.color565(168, 167, 167));
+    } else if ((x > 122) && (x < 236) && (y > 55) && (y < 80)) {
+      automan_flag = 2; // manual
+
+      tft.drawRect(4, 55, 114, 25, tft.color565(168, 167, 167));
+      tft.drawRect(122, 55, 114, 25, tft.color565(232, 23, 93));
+    }
+
+    if (automan_flag == 1) {
+      operation = 1; // auto
+
+    } else if (automan_flag == 2) {
+      if (ts.dataAvailable()) {
+        ts.read();
+        y = tft.height() - ts.getX();
+        x = ts.getY();
+
+        if ((x > 20) && (x < 70) && (y > 170) && (y < 220)) {
+          operation = 2; // left
+        } else if ((x > 170) && (x < 220) && (y > 170) && (y < 220)) {
+          operation = 3; // right
+        } else if ((x > 95) && (x < 145) && (y > 95) && (y < 145)) {
+          operation = 4; // up
+        } else if ((x > 95) && (x < 145) && (y > 245) && (y < 295)) {
+          operation = 5;
+        } else {
+          operation = 0; // do nothing
         }
       } else {
-        automan_flag = 0; // do nothing
+        operation = 0; // do nothing
       }
-
-      if (automan_flag == 1) {
-        operation = 1; // automatic
-
-        tft.fillRect(4, 55, 114, 25, ILI9341_BLACK);
-        tft.fillRect(122, 55, 114, 25, ILI9341_WHITE);
-        tft.drawRect(122, 55, 114, 25, ILI9341_BLACK);
-
-        tft.setCursor(8, 60);
-
-        tft.setTextColor(ILI9341_WHITE);
-        tft.setTextSize(2);
-        tft.println("Automatic");
-
-        tft.setCursor(145, 60);
-
-        tft.setTextColor(ILI9341_BLACK);
-        tft.setTextSize(2);
-        tft.println("Manual");
-      } else if (automan_flag == 2) {
-        tft.fillRect(4, 55, 114, 25, ILI9341_WHITE);
-        tft.drawRect(4, 55, 114, 25, ILI9341_BLACK);
-        tft.fillRect(122, 55, 114, 25, ILI9341_BLACK);
-
-        tft.setCursor(8, 60);
-
-        tft.setTextColor(ILI9341_BLACK);
-        tft.setTextSize(2);
-        tft.println("Automatic");
-
-        tft.setCursor(145, 60);
-
-        tft.setTextColor(ILI9341_WHITE);
-        tft.setTextSize(2);
-        tft.println("Manual");
-
-        if (ts.dataAvailable()) {
-          if ((x > 20) && (x < 70) && (y > 170) && (y < 220)) {
-            operation = 2; // left
-
-            tft.drawRect(15, 165, 60, 60, ILI9341_BLACK);
-            tft.drawRect(165, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 90, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 240, 60, 60, ILI9341_WHITE);
-          } else if ((x > 170) && (x < 220) && (y > 170) && (y < 220)) {
-            operation = 3; // right
-
-            tft.drawRect(15, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(165, 165, 60, 60, ILI9341_BLACK);
-            tft.drawRect(90, 90, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 240, 60, 60, ILI9341_WHITE);
-          } else if ((x > 95) && (x < 145) && (y > 95) && (y < 145)) {
-            operation = 4; // up
-
-            tft.drawRect(15, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(165, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 90, 60, 60, ILI9341_BLACK);
-            tft.drawRect(90, 240, 60, 60, ILI9341_WHITE);
-          } else if ((x > 95) && (x < 145) && (y > 245) && (y < 295)) {
-            operation = 5;
-
-            tft.drawRect(15, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(165, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 90, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 240, 60, 60, ILI9341_BLACK);
-          } else {
-            operation = 0; // do nothing
-            tft.drawRect(15, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(165, 165, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 90, 60, 60, ILI9341_WHITE);
-            tft.drawRect(90, 240, 60, 60, ILI9341_WHITE);
-          }
-        } else {
-          operation = 0;
-          tft.drawRect(15, 165, 60, 60, ILI9341_WHITE);
-          tft.drawRect(165, 165, 60, 60, ILI9341_WHITE);
-          tft.drawRect(90, 90, 60, 60, ILI9341_WHITE);
-          tft.drawRect(90, 240, 60, 60, ILI9341_WHITE);
-        }
-      }
+    } else {
+      operation = 0;
     }
   }
 
+  Serial.print("Operation: ");
+  Serial.println(operation);
 }
 
-unsigned long textDisplay() {
+unsigned long initialDisplay() {
+  // background color
+  tft.fillScreen(tft.color565(71, 71, 71));
 
-  tft.setCursor(75, 10);
+  // draw rectangles for header and buttons
+  tft.fillRect(4, 5, 232, 45, tft.color565(204, 82, 122));
+  tft.fillRect(4, 55, 114, 25, tft.color565(168, 167, 167));
+  tft.fillRect(122, 55, 114, 25, tft.color565(168, 167, 167));
 
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setTextSize(5);
+  // draw triangles for direction buttons
+  tft.fillTriangle(20, 195, 70, 220, 70, 170, tft.color565(168, 167, 167));
+  tft.fillTriangle(220, 195, 170, 170, 170, 220, tft.color565(168, 167, 167));
+  tft.fillTriangle(120, 295, 145, 245, 95, 245, tft.color565(168, 167, 167));
+  tft.fillTriangle(120, 95, 95, 145, 145, 145, tft.color565(168, 167, 167));
+
+  // display text
+  tft.setFont(&raleway12pt7b);
+
+  tft.setCursor(95, 35);
+  tft.setTextColor(tft.color565(54, 54, 54));
+  //tft.setTextSize(5);
   tft.println("V3M");
 
-  tft.setCursor(8, 60);
+  tft.setFont(&raleway9pt7b);
 
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setTextSize(2);
+  tft.setCursor(17, 72);
+  tft.setTextColor(tft.color565(54, 54, 54));
+  //tft.setTextSize(2);
   tft.println("Automatic");
 
-  tft.setCursor(145, 60);
-
-  tft.setTextColor(ILI9341_BLACK);
-  tft.setTextSize(2);
+  tft.setCursor(145, 72);
+  tft.setTextColor(tft.color565(54, 54, 54));
+  //tft.setTextSize(2);
   tft.println("Manual");
+
 }
 
-unsigned long triangleDisplay() {
-  tft.fillTriangle(20, 195, 70, 220, 70, 170, tft.color565(0, 0, 0));
-  tft.fillTriangle(220, 195, 170, 170, 170, 220, tft.color565(0, 0, 0));
-  tft.fillTriangle(120, 295, 145, 245, 95, 245, tft.color565(0, 0, 0));
-  tft.fillTriangle(120, 95, 95, 145, 145, 145, tft.color565(0, 0, 0));
-}
-
-unsigned long rectDisplay() {
-  tft.drawRect(4, 55, 114, 25, tft.color565(0, 0, 0));
-  tft.drawRect(122, 55, 114, 25, tft.color565(0, 0, 0));
+void requestEvent() {
+  Wire.write(automan_flag);
+  //Wire.write(operation);
 }
 
