@@ -25,9 +25,10 @@
 Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 URTouch ts(TS_SCK, TS_CS, TS_MOSI, TS_MISO, TS_IRQ);
 
-int automan_flag = 0; // 0 - do nothing, 1 - auto, 2 - manual
-int operation = 0; // 0 - do nothing, 1 - auto, 2 - left, 3 - right, 4 - up, 5 - down
+char automan_flag = '0'; // 0 - do nothing, 1 - auto, 2 - manual
+char operation = '0'; //  0 - do nothing 3 - do nothing, 4 - left, 5 - right, 6 - up, 7 - down, 8 - reset
 int x, y;
+int i = 0;
 
 void setup() {
   Serial.begin(9600);
@@ -37,7 +38,11 @@ void setup() {
   ts.setPrecision(PREC_EXTREME);
 
   initialDisplay();
-  Wire.onRequest(requestEvent);
+
+  do {
+    Wire.onRequest(requestEvent);
+    i = 1;
+  } while(i = 0);
 }
 
 void loop() {
@@ -47,45 +52,49 @@ void loop() {
     x = ts.getY();
 
     if ((x > 4) && (x < 118) && (y > 55) && (y < 80)) {
-      automan_flag = 1; // auto
+      automan_flag = '1'; // auto
 
       tft.drawRect(4, 55, 114, 25, tft.color565(232, 23, 93));
       tft.drawRect(122, 55, 114, 25, tft.color565(168, 167, 167));
     } else if ((x > 122) && (x < 236) && (y > 55) && (y < 80)) {
-      automan_flag = 2; // manual
+      automan_flag = '2'; // manual
 
       tft.drawRect(4, 55, 114, 25, tft.color565(168, 167, 167));
       tft.drawRect(122, 55, 114, 25, tft.color565(232, 23, 93));
     }
 
-    if (automan_flag == 1) {
-      operation = 1; // auto
+    if (automan_flag == '1') {
+      operation = '1'; // auto
 
-    } else if (automan_flag == 2) {
+    } else if (automan_flag == '2') {
+      operation = '2';
       if (ts.dataAvailable()) {
         ts.read();
         y = tft.height() - ts.getX();
         x = ts.getY();
 
         if ((x > 20) && (x < 70) && (y > 170) && (y < 220)) {
-          operation = 2; // left
+          operation = '4'; // left
         } else if ((x > 170) && (x < 220) && (y > 170) && (y < 220)) {
-          operation = 3; // right
+          operation = '5'; // right
         } else if ((x > 95) && (x < 145) && (y > 95) && (y < 145)) {
-          operation = 4; // up
+          operation = '6'; // up
         } else if ((x > 95) && (x < 145) && (y > 245) && (y < 295)) {
-          operation = 5;
+          operation = '7'; // down
+        } else if ((x > 95) && (x < 145) && (y > 170) && (y < 220)) {
+          operation = '8'; 
         } else {
-          operation = 0; // do nothing
+          operation = '3'; // do nothing
         }
       } else {
-        operation = 0; // do nothing
+        operation = '3'; // do nothing
       }
     } else {
-      operation = 0;
+      operation = '3';
     }
   }
-
+  Serial.print("Mode ");
+  Serial.println(automan_flag);
   Serial.print("Operation: ");
   Serial.println(operation);
 }
@@ -98,6 +107,7 @@ unsigned long initialDisplay() {
   tft.fillRect(4, 5, 232, 45, tft.color565(204, 82, 122));
   tft.fillRect(4, 55, 114, 25, tft.color565(168, 167, 167));
   tft.fillRect(122, 55, 114, 25, tft.color565(168, 167, 167));
+  tft.fillRect(95, 170, 50, 50, tft.color565(168, 167, 167));
 
   // draw triangles for direction buttons
   tft.fillTriangle(20, 195, 70, 220, 70, 170, tft.color565(168, 167, 167));
@@ -125,10 +135,15 @@ unsigned long initialDisplay() {
   //tft.setTextSize(2);
   tft.println("Manual");
 
+  tft.setCursor(102, 200);
+  tft.setTextColor(tft.color565(54, 54, 54));
+  //tft.setTextSize(5);
+  tft.println("RST");
+
 }
 
 void requestEvent() {
-  Wire.write(automan_flag);
-  //Wire.write(operation);
+  //Wire.write(automan_flag);
+  Wire.write(operation);
 }
 

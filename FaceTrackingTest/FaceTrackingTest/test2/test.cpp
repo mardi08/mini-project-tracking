@@ -38,7 +38,7 @@ String face_window = "Face View";
 
 int main() {
 
-  VideoCapture cap(0); // capture from default camera
+  VideoCapture cap(1); // capture from default camera
   Mat frame;
   Point priorCenter(0, 0);
   string x, y;
