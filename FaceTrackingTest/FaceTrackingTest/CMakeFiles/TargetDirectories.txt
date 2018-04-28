@@ -1,0 +1,3 @@
+/home/moeyehtet96/mini-project-tracking/FaceTrackingTest/FaceTrackingTest/CMakeFiles/rebuild_cache.dir
+/home/moeyehtet96/mini-project-tracking/FaceTrackingTest/FaceTrackingTest/CMakeFiles/FaceTracking.dir
+/home/moeyehtet96/mini-project-tracking/FaceTrackingTest/FaceTrackingTest/CMakeFiles/edit_cache.dir
