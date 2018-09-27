@@ -1,0 +1,13 @@
+G04 Gerber job file.*
+%TF.FileFunction,JobInfo*%
+%TF.GenerationSoftware,Autodesk,EAGLE,8.6.0*%
+%TF.CreationDate,2018-04-17T18:32:18Z*%
+%TF.Part,Single*%
+%MOMM*%
+%TJ.B_Owner,Moe Ye Htet <moeyehtet96@gmail.com>*%
+%TJ.B_ID,project_pcb*%
+%TJ.B_LayerNum,2*%
+%TJ.B_Thickness,1.570000*%
+%TJ.B_Size_X,139.700000*%
+%TJ.B_Size_Y,118.110000*%
+M02*
